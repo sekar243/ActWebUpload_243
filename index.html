@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unggah File Sederhana</title>
+
+    <style>
+
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f4f4;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    min-height:100vh;
+    margin:0;
+}
+
+.wrapper{
+    width:800px;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+.form-group{
+    margin-bottom:15px;
+}
+
+input[type="file"]{
+    width:100%;
+    padding:10px;
+}
+
+#submitBtn{
+    padding:10px 20px;
+    border:none;
+    background:#007bff;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+#submitBtn:hover{
+    background:#0056b3;
+}
+
+#submitBtn:disabled{
+    background:gray;
+    cursor:not-allowed;
+}
+
+.preview-thumb{
+    width:150px;
+    margin-top:10px;
+    border-radius:8px;
+}
+
+.success{
+    background:#d4edda;
+    color:#155724;
+    padding:10px;
+    border-radius:5px;
+    margin-top:10px;
+}
+
+.error{
+    background:#f8d7da;
+    color:#721c24;
+    padding:10px;
+    border-radius:5px;
+    margin-top:10px;
+}
+
+.file-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 0;
+    border-bottom:1px solid #ddd;
+}
+
+.file-actions button{
+    margin-left:5px;
+    padding:8px 14px;
+    cursor:pointer;
+    border:none;
+    border-radius:5px;
+    color:white;
+    font-weight:bold;
+}
+
+.file-actions button:nth-child(1){
+    background:#3498db;
+}
+
+.file-actions button:nth-child(2){
+    background:#2ecc71;
+}
+
+.file-actions button:nth-child(3){
+    background:#e74c3c;
+}
+
+.file-actions button:nth-child(1):hover{
+    background:#2980b9;
+}
+
+.file-actions button:nth-child(2):hover{
+    background:#27ae60;
+}
+
+.file-actions button:nth-child(3):hover{
+    background:#c0392b;
+}
+
+#previewContainer img{
+    max-width:100%;
+    margin-top:10px;
+    border-radius:10px;
+}
+
+.empty{
+    color:gray;
+    margin-top:10px;
+}
+
+h2, h3{
+    color:#333;
+}
+
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+    <h2>Unggah Gambar</h2>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+
+        <div class="form-group">
+            <label>Pilih gambar:</label>
+
+            <input
+                type="file"
+                name="fileToUpload"
+                id="fileToUpload"
+                accept="image/jpeg,image/png,image/gif,image/jpg"
+            >
+        </div>
+
+        <div id="previewImg"></div>
+
+        <button type="submit" id="submitBtn">
+            Unggah File
+        </button>
+
+    </form>
+
+    <div id="message"></div>
+
+    <div id="previewSection" style="display:none;">
+        <h3>Preview Gambar</h3>
+        <div id="previewContainer"></div>
+    </div>
+
+    <div class="file-list">
+        <h3>Daftar Gambar</h3>
+        <div id="fileListContainer"></div>
+    </div>
+
+</div>
+
+<script>
+
+const fileInput = document.getElementById('fileToUpload');
+const previewDiv = document.getElementById('previewImg');
+const submitBtn = document.getElementById('submitBtn');
+
+
+// PREVIEW GAMBAR 
+
+fileInput.addEventListener('change', function(e){
+
+    const file = e.target.files[0];
+
+    previewDiv.innerHTML = '';
+
+    if(!file){
+        return;
+    }
+
+    // Validasi file gambar
+    if(!file.type.startsWith('image/')){
+        showMessage('Hanya file gambar!', 'error');
+        fileInput.value = '';
+        return;
+    }
+
+    // Maksimal 5MB
+    if(file.size > 5 * 1024 * 1024){
+        showMessage('Ukuran file maksimal 5MB!', 'error');
+        fileInput.value = '';
+        return;
+    }
+
+    const info = document.createElement('div');
+    info.className = 'file-info';
+    info.textContent = `File: ${file.name} (${formatFileSize(file.size)})`;
+
+    previewDiv.appendChild(info);
+
+    const reader = new FileReader();
+
+    reader.onload = function(ev){
+
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        img.className = 'preview-thumb';
+
+        previewDiv.appendChild(img);
+    };
+
+    reader.readAsDataURL(file);
+
+});
+
+
+// UPLOAD
+
+document.getElementById('uploadForm')
+.addEventListener('submit', async function(e){
+
+    e.preventDefault();
+
+    const file = fileInput.files[0];
+
+    if(!file){
+        showMessage('Pilih file terlebih dahulu!', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('fileToUpload', file);
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Mengunggah...';
+
+    try{
+
+        const response = await fetch('upload.php', {
+            method:'POST',
+            body:formData
+        });
+
+        if(!response.ok){
+            throw new Error('Server error');
+        }
+
+        const result = await response.json();
+
+        showMessage(
+            result.message,
+            result.success ? 'success' : 'error'
+        );
+
+        if(result.success){
+
+            fileInput.value = '';
+            previewDiv.innerHTML = '';
+
+            loadFileList();
+        }
+
+    }catch(error){
+
+        console.error(error);
+
+        showMessage('Terjadi kesalahan saat upload!', 'error');
+
+    }finally{
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Unggah File';
+
+    }
+
+});
+
+
+// LOAD FILE
+
+async function loadFileList(){
+
+    try{
+
+        const response = await fetch(
+            'upload.php?action=get_files'
+        );
+
+        const files = await response.json();
+
+        const container =
+            document.getElementById('fileListContainer');
+
+        if(!files.length){
+
+            container.innerHTML =
+                '<div class="empty">Belum ada gambar.</div>';
+
+            return;
+        }
+
+        container.innerHTML = '';
+
+        files.forEach(file => {
+
+            const item = document.createElement('div');
+            item.className = 'file-item';
+
+            item.innerHTML = `
+                <div>
+                    <strong>${escapeHtml(file.name)}</strong><br>
+                    ${formatFileSize(file.size)}
+                </div>
+
+                <div class="file-actions">
+                    <button onclick="previewFile('${encodeURIComponent(file.name)}')">
+                        Preview
+                    </button>
+
+                    <button onclick="downloadFile('${encodeURIComponent(file.name)}')">
+                        Download
+                    </button>
+
+                    <button onclick="deleteFile('${encodeURIComponent(file.name)}')">
+                        Delete
+                    </button>
+                </div>
+            `;
+
+            container.appendChild(item);
+
+        });
+
+    }catch(error){
+
+        console.error(error);
+
+    }
+
+}
+
+
+// PREVIEW 
+
+window.previewFile = function(filename){
+
+    const previewSection =
+        document.getElementById('previewSection');
+
+    const previewContainer =
+        document.getElementById('previewContainer');
+
+    previewContainer.innerHTML = '';
+
+    const img = document.createElement('img');
+
+    img.src = `uploads/${filename}`;
+
+    previewContainer.appendChild(img);
+
+    previewSection.style.display = 'block';
+
+};
+
+
+// DOWNLOAD 
+
+window.downloadFile = function(filename){
+
+    window.location.href =
+        `download.php?file=${filename}`;
+
+};
+
+
+// DELETE 
+
+window.deleteFile = async function(filename){
+
+    if(!confirm('Yakin ingin menghapus gambar?')){
+        return;
+    }
+
+    try{
+
+        const response = await fetch('delete.php', {
+
+            method:'POST',
+
+            headers:{
+                'Content-Type':'application/json'
+            },
+
+            body:JSON.stringify({
+                filename: decodeURIComponent(filename)
+            })
+
+        });
+
+        const result = await response.json();
+
+        showMessage(
+            result.message,
+            result.success ? 'success' : 'error'
+        );
+
+        if(result.success){
+
+            loadFileList();
+
+            document.getElementById('previewSection')
+                .style.display = 'none';
+        }
+
+    }catch(error){
+
+        console.error(error);
+
+        showMessage('Gagal menghapus gambar!', 'error');
+
+    }
+
+};
+
+
+function formatFileSize(bytes){
+
+    if(bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes','KB','MB','GB'];
+
+    const i =
+        Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat(
+        (bytes / Math.pow(k, i)).toFixed(2)
+    ) + ' ' + sizes[i];
+}
+
+
+function escapeHtml(text){
+
+    const div = document.createElement('div');
+
+    div.textContent = text;
+
+    return div.innerHTML;
+}
+
+
+function showMessage(message, type){
+
+    const messageDiv =
+        document.getElementById('message');
+
+    messageDiv.innerHTML =
+        `<div class="${type}">${message}</div>`;
+
+    setTimeout(() => {
+
+        messageDiv.innerHTML = '';
+
+    }, 3000);
+}
+
+loadFileList();
+
+</script>
+
+</body>
+</html>
