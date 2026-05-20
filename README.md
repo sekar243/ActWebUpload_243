@@ -1,0 +1,5 @@
+![Screenshot](https://github.com/sekar243/ActWebUpload_243/raw/main/before.png?raw=true)
+![Screenshot](https://github.com/sekar243/ActWebUpload_243/raw/main/hapus.png?raw=true)
+![Screenshot](https://github.com/sekar243/ActWebUpload_243/raw/main/preview.png?raw=true)
+![Screenshot](https://github.com/sekar243/ActWebUpload_243/raw/main/unduh.png?raw=true)
+![Screenshot](https://github.com/sekar243/ActWebUpload_243/raw/main/upload.png?raw=true)
